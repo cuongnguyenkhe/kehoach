@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kế hoạch kiểm tra TBA 110/220kV</title>
+<style>
+  :root{
+    --bg:#000000; --card:#15171c; --text:#eef1f6; --muted:#9aa4b2; --line:#2a2e37;
+    --thang:#a78bfa; --ngay:#f0a94d; --dem:#5b9bf2; --accent:#14b8a6; --accent-ink:#06201d;
+    --head:#000000; --head2:#000000; --shadow:0 1px 2px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}
+
+  /* ===== Header ===== */
+  header{background:var(--bg);color:var(--text);padding:22px 24px}
+  .headwrap{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
+  .headwrap .logo{font-size:30px;line-height:1}
+  header h1{margin:0;font-size:21px;font-weight:700;letter-spacing:.2px;color:var(--text)}
+  header p{margin:0;opacity:.65;font-size:13px;color:var(--muted)}
+
+  /* ===== Control bar (sticky) ===== */
+  .controlbar{position:sticky;top:0;z-index:10;background:var(--bg)}
+  .controlbar-inner{max-width:1300px;margin:0 auto;padding:12px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .field.grow{flex:1;min-width:260px}
+  input,select,button{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+  button{cursor:pointer;font-weight:600;transition:filter .15s}
+  button:hover{filter:brightness(0.97)}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  button.ghost{background:transparent}
+  #status{max-width:1300px;margin:8px auto 0;padding:0 24px;font-size:12.5px;color:var(--muted);min-height:18px}
+  #status.err{color:#dc2626;white-space:pre-line}
+
+  main{max-width:1300px;margin:0 auto;padding:18px 24px 40px;display:flex;flex-direction:column;gap:26px}
+
+  /* ===== Section shell ===== */
+  section.block{display:flex;flex-direction:column;gap:12px}
+  .block-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .block-head h2{margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .block-head .desc{color:var(--muted);font-size:12.5px;margin-left:2px}
+  .block-head .spacer{flex:1}
+  a.openlink{color:var(--accent);text-decoration:none;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+  a.openlink:hover{text-decoration:underline}
+
+  /* ===== Google sheet viewer ===== */
+  .viewerwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);height:62vh;min-height:360px;display:flex}
+  iframe{flex:1;width:100%;border:0}
+
+  /* ===== Result title / today badge ===== */
+  .resultTitle{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .resultTitle .today{background:#ef4444;color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.3px}
+
+  /* ===== Summary cards ===== */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .sbox{background:var(--card);border:1px solid var(--line);border-radius:14px;border-top-width:4px;padding:16px;box-shadow:var(--shadow)}
+  .sbox.thang{border-top-color:var(--thang)} .sbox.ngay{border-top-color:var(--ngay)} .sbox.dem{border-top-color:var(--dem)}
+  .sbox h3{margin:0 0 10px;font-size:14.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .sbox.thang h3{color:var(--thang)} .sbox.ngay h3{color:var(--ngay)} .sbox.dem h3{color:var(--dem)}
+  .sbox .cnt{font-size:24px;font-weight:800;color:var(--text)}
+  .team-line{margin:8px 0;line-height:1.6}
+  .team-line b{color:var(--muted);font-size:12px;font-weight:700;display:block;margin-bottom:3px}
+  .tag{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:12.5px}
+  .empty{color:var(--muted);font-style:italic;font-size:13px}
+
+  @media(max-width:700px){
+    header{padding:16px}
+    .controlbar-inner{padding:10px 16px}
+    main{padding:14px 16px 30px}
+    .viewerwrap{height:50vh}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="headwrap">
+   <h1>Đội giám sát vận hành - TTGS&VHLĐ</h1>
+    <div>
+      <h1>Kế hoạch kiểm tra TBA 110/220kV</h1>
+      <p id="subtitle">Kế hoạch kiểm tra thiết bị trên Google Sheet</p>
+    </div>
+  </div>
+</header>
+
+<div class="controlbar">
+  <div class="controlbar-inner">
+    <div class="field grow">
+      Link Google Sheet
+      <input type="url" id="urlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
+    </div>
+    <div class="field" style="max-width:170px">
+      Ngày lọc
+      <input type="date" id="dateInput">
+    </div>
+    <button class="ghost" id="todayBtn">Hôm nay</button>
+    <button class="primary" id="loadBtn">Tải &amp; Lọc</button>
+  </div>
+</div>
+<div id="status">Đang tải…</div>
+
+<main>
+  <section class="block">
+    <div class="block-head">
+      <h2>📄 Bảng gốc trên Google Sheet</h2>
+      <span class="desc">Xem trực tiếp dữ liệu như trên Google</span>
+      <span class="spacer"></span>
+      <a class="openlink" id="openLink" href="#" target="_blank" rel="noopener">Mở trong tab mới ↗</a>
+    </div>
+    <div class="viewerwrap"><iframe id="sheetFrame"></iframe></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2 class="resultTitle" id="resultTitle"></h2>
+    </div>
+    <div class="summary" id="summary"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEFAULT_URL = "https://docs.google.com/spreadsheets/d/1a7Nzd5QxLmxMDtqEhTDbhu3uq7s6l9gT-NNiM7XwDgY/edit?gid=2146210807#gid=2146210807";
+const KEY = { thang:"thang", ngay:"ngay", dem:"dem" };
+const LABEL = { thang:"Kiểm tra THÁNG", ngay:"Kiểm tra NGÀY", dem:"Kiểm tra ĐÊM" };
+const WD = ["CN","T2","T3","T4","T5","T6","T7"];
+
+let DATA = { tba: [], month: 11, year: 2026 };
+let DAYS = 31, FIRST_DAY_COL = 3;
+
+const norm = s => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").trim().toLowerCase();
+const pad = n => String(n).padStart(2,"0");
+const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtVN = d => `${WD[d.getDay()]}, ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function setStatus(t, err){ const s=$("status"); s.textContent=t||""; s.className = err?"err":""; }
+
+function parseSheetUrl(u){
+  const m = String(u).match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if(!m) return null;
+  const g = String(u).match(/[#?&]gid=(\d+)/);
+  return { id:m[1], gid:g?g[1]:null };
+}
+
+function parseCSV(text){
+  const rows=[]; let row=[], cur="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; }
+      else cur+=c;
+    } else {
+      if(c==='"') q=true;
+      else if(c===','){ row.push(cur); cur=""; }
+      else if(c==='\n'){ row.push(cur); rows.push(row); row=[]; cur=""; }
+      else if(c!=='\r') cur+=c;
+    }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+/* Tự nhận diện vị trí cột Đội / TBA / Tháng-Ngày-Đêm / các cột ngày */
+function buildData(rows){
+  const now=new Date(); let month=now.getMonth()+1, year=now.getFullYear();
+  for(let i=0;i<Math.min(rows.length,12);i++){
+    for(const c of rows[i]){
+      const m = String(c??"").match(/(\d{1,2})\s*n[aă]m\s*(\d{4})/i);
+      if(m){ month=+m[1]; year=+m[2]; }
+    }
+  }
+  const cnt={};
+  rows.forEach(r=>r.forEach((c,i)=>{ if(norm(c) in KEY) cnt[i]=(cnt[i]||0)+1; }));
+  let labCol=-1, best=0;
+  for(const k in cnt) if(cnt[k]>best){ best=cnt[k]; labCol=+k; }
+  if(labCol<0) return { tba:[], month, year };
+  const bCol=labCol-1, aCol=labCol-2;
+  let firstCol=labCol+1, n=31;
+  for(const r of rows.slice(0,40)){
+    const cols=[]; r.forEach((c,i)=>{ if(i>labCol && /^\d{1,2}$/.test(String(c??"").trim())) cols.push(i); });
+    if(cols.length>=25){ firstCol=cols[0]; n=Math.min(cols.length,31); break; }
+  }
+  DAYS=n; FIRST_DAY_COL=firstCol;
+  const tba=[]; let team="", cur=null;
+  for(const r of rows){
+    const lab = norm(r[labCol]);
+    if(!(lab in KEY)) continue;
+    const a = aCol>=0 ? String(r[aCol]??"").trim() : "";
+    const b = bCol>=0 ? String(r[bCol]??"").trim() : "";
+    if(a && /\d/.test(a)) team = a;
+    if(b){
+      cur = { team, name:b, thang:Array(DAYS).fill(false), ngay:Array(DAYS).fill(false), dem:Array(DAYS).fill(false) };
+      tba.push(cur);
+    }
+    if(!cur) continue;
+    for(let i=0;i<DAYS;i++){
+      cur[KEY[lab]][i] = String(r[FIRST_DAY_COL+i]??"").trim() !== "";
+    }
+  }
+  return { tba, month, year };
+}
+
+async function tryFetchCSV(url){
+  const res = await fetch(url, { cache:"no-store" });
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const t = await res.text();
+  if(/^\s*<(!doctype|html)/i.test(t)) throw new Error("Google trả về trang đăng nhập (sheet chưa chia sẻ công khai?)");
+  return parseCSV(t);
+}
+
+function jsonpLoad(url){
+  return new Promise((resolve,reject)=>{
+    const cb="__gv"+Date.now()+Math.floor(Math.random()*1e4);
+    const s=document.createElement("script");
+    const cleanup=()=>{ clearTimeout(t); delete window[cb]; s.remove(); };
+    const t=setTimeout(()=>{ cleanup(); reject(new Error("quá thời gian chờ")); },20000);
+    window[cb]=obj=>{
+      cleanup();
+      if(!obj || obj.status==="error"){
+        const e=obj&&obj.errors&&obj.errors[0];
+        reject(new Error((e&&(e.detailed_message||e.message))||"Google báo lỗi")); return;
+      }
+      resolve(obj.table.rows.map(r=>(r.c||[]).map(c=> c ? (c.v!=null ? String(c.v) : (c.f??"")) : "")));
+    };
+    s.onload=()=>{ if(window[cb]){ cleanup(); reject(new Error("Google trả về trang đăng nhập (sheet chưa chia sẻ công khai?)")); } };
+    s.onerror=()=>{ cleanup(); reject(new Error("không kết nối được tới Google (mạng bị chặn?)")); };
+    s.src=url+"&tqx=out:json;responseHandler:"+cb;
+    document.head.appendChild(s);
+  });
+}
+
+async function loadFromGoogle(){
+  const p = parseSheetUrl($("urlInput").value.trim());
+  if(!p){ setStatus("Link không hợp lệ. Hãy dán link Google Sheet dạng https://docs.google.com/spreadsheets/d/…", true); return; }
+  try{ localStorage.setItem("tba_filter_url", $("urlInput").value.trim()); }catch(e){}
+
+  const previewUrl = `https://docs.google.com/spreadsheets/d/${p.id}/preview${p.gid?("?gid="+p.gid):""}`;
+  const editUrl = `https://docs.google.com/spreadsheets/d/${p.id}/edit${p.gid?("?gid="+p.gid):""}`;
+  $("sheetFrame").src = previewUrl;
+  $("openLink").href = editUrl;
+
+  setStatus("Đang tải từ Google Sheet…");
+  const g = p.gid ? `&gid=${p.gid}` : "";
+  const base = `https://docs.google.com/spreadsheets/d/${p.id}`;
+  const strategies = [
+    ["gviz JSONP",  () => jsonpLoad(`${base}/gviz/tq?headers=0${g}`)],
+    ["gviz CSV",    () => tryFetchCSV(`${base}/gviz/tq?tqx=out:csv&headers=0${g}`)],
+    ["export CSV",  () => tryFetchCSV(`${base}/export?format=csv${g}`)]
+  ];
+  const errs=[];
+  for(const [name,fn] of strategies){
+    try{
+      const rows = await fn();
+      const d = buildData(rows);
+      if(d.tba.length){ DATA = d; setStatus(`Đã tải ${d.tba.length} TBA (tháng ${d.month}/${d.year}) lúc ${new Date().toLocaleTimeString("vi-VN")}.`); render(); return; }
+      errs.push(`${name}: đọc được ${rows.length} dòng nhưng không thấy dòng Tháng/Ngày/Đêm`);
+    }catch(e){ errs.push(`${name}: ${e.message}`); }
+  }
+  setStatus("Không đọc được Google Sheet. Chi tiết:\n"+errs.join("\n")+"\n\nHãy kiểm tra: (1) sheet đã chia sẻ \"Bất kỳ ai có đường liên kết – Người xem\"; (2) mở file HTML này bằng Chrome/Edge trực tiếp (không xem trước trong ứng dụng).", true);
+}
+
+function selectedDate(){
+  const v = $("dateInput").value; if(!v) return null;
+  const [y,m,d] = v.split("-").map(Number);
+  return new Date(y,m-1,d);
+}
+function selectedIndex(){
+  const sel = selectedDate(); if(!sel) return -1;
+  const first = new Date(DATA.year, DATA.month-1, 1);
+  const idx = Math.round((sel-first)/864e5);
+  return (idx>=0 && idx<DAYS) ? idx : -1;
+}
+
+function render(){
+  const idx = selectedIndex();
+  const d = selectedDate();
+  const isToday = d && toISO(d)===toISO(new Date());
+  $("subtitle").textContent = `Kế hoạch tháng ${DATA.month}/${DATA.year} · ${DATA.tba.length} TBA`;
+
+  $("resultTitle").innerHTML = d
+    ? `🔎 Kết quả lọc ngày ${fmtVN(d)} ${isToday?'<span class="today">HÔM NAY</span>':''}`
+    : "🔎 Chọn một ngày để lọc";
+
+  const sum = { thang:{}, ngay:{}, dem:{} };
+  if(idx>=0){
+    for(const t of DATA.tba){
+      for(const k of ["thang","ngay","dem"]){
+        if(t[k][idx]) (sum[k][t.team] ??= []).push(t.name);
+      }
+    }
+  }
+  const count = k => Object.values(sum[k]).reduce((a,b)=>a+b.length,0);
+
+  const sm = $("summary"); sm.innerHTML="";
+  for(const k of ["thang","ngay","dem"]){
+    const box=document.createElement("div"); box.className="sbox "+k;
+    let body="";
+    if(idx<0){
+      body = `<div class="empty">Ngày đã chọn nằm ngoài phạm vi kế hoạch trong sheet, hoặc chưa chọn ngày.</div>`;
+    } else {
+      const teams=Object.keys(sum[k]).sort((a,b)=>a.localeCompare(b,"vi",{numeric:true}));
+      body = teams.length
+        ? teams.map(tm=>`<div class="team-line"><b>Đội ${tm} · ${sum[k][tm].length} TBA</b>${sum[k][tm].map(n=>`<span class="tag">${esc(n)}</span>`).join("")}</div>`).join("")
+        : `<div class="empty">Không có TBA nào.</div>`;
+    }
+    box.innerHTML = `<h3>${LABEL[k]}<span class="cnt">${idx<0?"–":count(k)}</span></h3>${body}`;
+    sm.appendChild(box);
+  }
+}
+
+let saved=""; try{ saved = localStorage.getItem("tba_filter_url") || ""; }catch(e){}
+$("urlInput").value = saved || DEFAULT_URL;
+$("dateInput").value = toISO(new Date());
+$("todayBtn").onclick = () => { $("dateInput").value = toISO(new Date()); render(); };
+$("dateInput").onchange = render;
+$("loadBtn").onclick = loadFromGoogle;
+$("urlInput").addEventListener("keydown", e => { if(e.key==="Enter") loadFromGoogle(); });
+
+loadFromGoogle();
+</script>
+</body>
+</html>
