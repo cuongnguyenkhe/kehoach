@@ -17,9 +17,10 @@
   /* ===== Header ===== */
   header{background:var(--bg);color:var(--text);padding:22px 24px}
   .headwrap{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
-  .headwrap .logo{font-size:30px;line-height:1}
-  header h1{margin:0;font-size:21px;font-weight:700;letter-spacing:.2px;color:var(--text)}
-  header p{margin:0;opacity:.65;font-size:13px;color:var(--muted)}
+  .headwrap .unit{margin:0 0 4px;font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent)}
+  header h1{margin:0;font-size:28px;font-weight:800;letter-spacing:.2px;color:var(--text)}
+  header p{margin:4px 0 0;opacity:.75;font-size:13.5px;color:var(--muted)}
+  @media(max-width:700px){ header h1{font-size:22px} }
 
   /* ===== Control bar (sticky) ===== */
   .controlbar{position:sticky;top:0;z-index:10;background:var(--bg)}
@@ -32,7 +33,7 @@
   button:hover{filter:brightness(0.97)}
   button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
   button.ghost{background:transparent}
-  #status{max-width:1300px;margin:8px auto 0;padding:0 24px;font-size:12.5px;color:var(--muted);min-height:18px}
+  #status{font-size:12.5px;font-weight:400;text-transform:none;letter-spacing:normal;color:var(--muted)}
   #status.err{color:#dc2626;white-space:pre-line}
 
   main{max-width:1300px;margin:0 auto;padding:18px 24px 40px;display:flex;flex-direction:column;gap:26px}
@@ -77,45 +78,41 @@
 <body>
 <header>
   <div class="headwrap">
-   <h1>TTGS&VHLĐ - Đội giám sát</h1>
+    <div class="unit">Đội giám sát - Trung tâm giám sát & vận hành lưới điện</div>
     <div>
-      <p id="subtitle">Kế hoạch kiểm tra thiết bị trên Google Sheet</p>
+      <b><p id="subtitle"></p></b>
     </div>
   </div>
 </header>
-
 <div class="controlbar">
   <div class="controlbar-inner">
     <div class="field grow">
-      Link Google Sheet
+      Dữ liệu từ Link Google Sheet:
       <input type="url" id="urlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
     </div>
     <div class="field" style="max-width:170px">
-      Chọn ngày
+      CHỌN NGÀY
       <input type="date" id="dateInput">
     </div>
-    <button class="ghost" id="todayBtn">Hôm nay</button>
     <button class="primary" id="loadBtn">Tìm kiếm</button>
   </div>
 </div>
-<div id="status">Đang tải…</div>
 
 <main>
   <section class="block">
     <div class="block-head">
-      <h2>📄 Bảng gốc trên Google Sheet</h2>
-      <span class="desc">Xem trực tiếp dữ liệu như trên Google</span>
-      <span class="spacer"></span>
-      <a class="openlink" id="openLink" href="#" target="_blank" rel="noopener">Mở trong tab mới ↗</a>
+      <h2 class="resultTitle" id="resultTitle"></h2>
+      <span class="desc" id="status">Đang tải…</span>
     </div>
-    <div class="viewerwrap"><iframe id="sheetFrame"></iframe></div>
+    <div class="summary" id="summary"></div>
   </section>
 
   <section class="block">
     <div class="block-head">
-      <h2 class="resultTitle" id="resultTitle"></h2>
+      <h2>📄 Bảng gốc trên Google Sheet:</h2>
+      <a class="openlink" id="openLink" href="#" target="_blank" rel="noopener">Mở trong tab mới ↗</a>
     </div>
-    <div class="summary" id="summary"></div>
+    <div class="viewerwrap"><iframe id="sheetFrame"></iframe></div>
   </section>
 </main>
 
@@ -278,8 +275,9 @@ function render(){
   const isToday = d && toISO(d)===toISO(new Date());
   $("subtitle").textContent = `Kế hoạch tháng ${DATA.month}/${DATA.year} · ${DATA.tba.length} TBA`;
 
+  const fmtNgay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
   $("resultTitle").innerHTML = d
-    ? `🔎 Kết quả lọc ngày ${fmtVN(d)} ${isToday?'<span class="today">HÔM NAY</span>':''}`
+    ? `🔎 Kết quả ngày: ${fmtNgay(d)} ${isToday?'<span class="today">HÔM NAY</span>':''}`
     : "🔎 Chọn một ngày để lọc";
 
   const sum = { thang:{}, ngay:{}, dem:{} };
@@ -312,7 +310,6 @@ function render(){
 let saved=""; try{ saved = localStorage.getItem("tba_filter_url") || ""; }catch(e){}
 $("urlInput").value = saved || DEFAULT_URL;
 $("dateInput").value = toISO(new Date());
-$("todayBtn").onclick = () => { $("dateInput").value = toISO(new Date()); render(); };
 $("dateInput").onchange = render;
 $("loadBtn").onclick = loadFromGoogle;
 $("urlInput").addEventListener("keydown", e => { if(e.key==="Enter") loadFromGoogle(); });
