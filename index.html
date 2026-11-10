@@ -277,7 +277,7 @@ function render(){
 
   const fmtNgay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
   $("resultTitle").innerHTML = d
-    ? `🔎 Kết quả  tìm kiếm công tác kiểm tra TBA 110/220kV theo kế hoạch ngày: ${fmtNgay(d)} ${isToday?'<span class="today">HÔM NAY</span>':''}`
+    ? `🔎 Kiểm tra TBA 110/220kV theo kế hoạch ngày: ${fmtNgay(d)} ${isToday?'<span class="today">HÔM NAY</span>':''}`
     : "🔎 Chọn một ngày để lọc";
 
   const sum = { thang:{}, ngay:{}, dem:{} };
