@@ -250,7 +250,7 @@ async function loadFromGoogle(){
     try{
       const rows = await fn();
       const d = buildData(rows);
-      if(d.tba.length){ DATA = d; setStatus(`Cập nhật kết quả lúc ${new Date().toLocaleTimeString("vi-VN")}`); render(); return; }
+      if(d.tba.length){ DATA = d; setStatus(`Cập nhật lúc: ${new Date().toLocaleTimeString("vi-VN")}`); render(); return; }
       errs.push(`${name}: đọc được ${rows.length} dòng nhưng không thấy dòng Tháng/Ngày/Đêm`);
     }catch(e){ errs.push(`${name}: ${e.message}`); }
   }
