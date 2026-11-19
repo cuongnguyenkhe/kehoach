@@ -69,6 +69,7 @@
   .sbox .cnt{font-size:inherit;font-weight:700;color:#dc2626}
   .team-line{margin:8px 0;line-height:1.6}
   .team-line b{color:var(--accent);font-size:12px;font-weight:700;display:block;margin-bottom:3px}
+  .team-line b .tba-cnt{color:#dc2626}
   .tag{display:inline-block;background:#ffffff;color:#000000;border:1px solid #9ca3af;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:12.5px;font-weight:700}
   .empty{color:#000000;font-style:italic;font-size:13px}
 
@@ -279,7 +280,7 @@ function render(){
   const idx = selectedIndex();
   const d = selectedDate();
   const isToday = d && toISO(d)===toISO(new Date());
-  $("subtitle").textContent = `Kế hoạch tháng ${DATA.month}/${DATA.year}: ${DATA.tba.length} TBA`;
+  $("subtitle").textContent = `Kế hoạch tháng ${DATA.month}/${DATA.year} · ${DATA.tba.length} TBA`;
 
   const fmtNgay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
   $("resultTitle").innerHTML = d
@@ -305,7 +306,7 @@ function render(){
     } else {
       const teams=Object.keys(sum[k]).sort((a,b)=>a.localeCompare(b,"vi",{numeric:true}));
       body = teams.length
-        ? teams.map(tm=>`<div class="team-line"><b>Đội ${tm}: ${sum[k][tm].length} TBA</b>${sum[k][tm].map(n=>`<span class="tag">${esc(n)}</span>`).join("")}</div>`).join("")
+        ? teams.map(tm=>`<div class="team-line"><b>Đội ${tm}: <span class="tba-cnt">${sum[k][tm].length} TBA</span></b>${sum[k][tm].map(n=>`<span class="tag">${esc(n)}</span>`).join("")}</div>`).join("")
         : `<div class="empty">Không có TBA nào.</div>`;
     }
     box.innerHTML = `<h3>${LABEL[k]}:<span class="cnt">${idx<0?"–":count(k)} TBA</span></h3>${body}`;
