@@ -279,7 +279,7 @@ function render(){
   const idx = selectedIndex();
   const d = selectedDate();
   const isToday = d && toISO(d)===toISO(new Date());
-  $("subtitle").textContent = `Kế hoạch tháng ${DATA.month}/${DATA.year} · ${DATA.tba.length} TBA`;
+  $("subtitle").textContent = `Kế hoạch tháng ${DATA.month}/${DATA.year} : ${DATA.tba.length} TBA`;
 
   const fmtNgay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
   $("resultTitle").innerHTML = d
