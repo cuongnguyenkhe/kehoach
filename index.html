@@ -391,32 +391,35 @@ function xlRender(){
 }
 
 const XL_KEY = "tba_xl_data";
-const XL_API = "api.php";   /* file api.php đặt cùng thư mục với index.html trên host */
+/* Dán link Web App của Google Apps Script vào đây (xem hướng dẫn), dạng https://script.google.com/macros/s/.../exec */
+const XL_API = "https://script.google.com/macros/s/AKfycbwkr1PqkCYuaJ-x4BshbjME7myymBbCYAs_tOWSUq0CuwG4X2qlNnCX3hEbruNNRA8c/exec";
 function xlKey(){ try{ return localStorage.getItem("tba_xl_key")||""; }catch(e){ return ""; } }
-async function xlPost(fd){
+function fileToB64(f){
+  return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(",")[1]); r.onerror=()=>no(new Error("không đọc được file")); r.readAsDataURL(f); });
+}
+async function xlPost(obj){
+  if(!XL_API) throw new Error("chưa dán link Google Apps Script vào XL_API trong index.html");
   for(let attempt=0; attempt<3; attempt++){
-    fd.set("key", xlKey());
-    const res = await fetch(XL_API, { method:"POST", body:fd });
+    obj.key = xlKey();
+    const res = await fetch(XL_API, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:JSON.stringify(obj) });
     let j=null; try{ j = await res.json(); }catch(_){}
-    if(res.status===401){
+    if(j && j.code===401){
       const k = prompt(attempt ? "Mật khẩu sai. Nhập lại mật khẩu:" : "Nhập mật khẩu để lưu/xóa dữ liệu trên host:");
       if(k===null) throw new Error("đã hủy nhập mật khẩu");
       try{ localStorage.setItem("tba_xl_key", k); }catch(e){}
       continue;
     }
-    if(!res.ok || !j || !j.ok) throw new Error((j && j.error) || ("HTTP "+res.status+" – host chưa có api.php hoặc không chạy PHP?"));
+    if(!res.ok || !j || !j.ok) throw new Error((j && j.error) || ("HTTP "+res.status));
     return j;
   }
   throw new Error("sai mật khẩu");
 }
-/* Lưu file Excel + dữ liệu đã đọc lên host; host tự xóa file cũ */
+/* Lưu file Excel + dữ liệu đã đọc lên Google Drive; file cũ tự bị xóa */
 async function xlServerSave(file){
   const st=$("xlStatus");
   st.style.color=""; st.textContent="Đang lưu lên host…";
   try{
-    const fd=new FormData();
-    fd.append("action","save"); fd.append("file",file); fd.append("json",JSON.stringify(XL_STORE));
-    await xlPost(fd);
+    await xlPost({ action:"save", name:file.name, fileB64:await fileToB64(file), json:XL_STORE });
     st.style.color="#16a34a";
     st.textContent="✔ Đã lưu lên host: "+file.name+" (file cũ đã được thay thế). Mở ở nơi khác vẫn có dữ liệu.";
   }catch(err){
@@ -425,7 +428,7 @@ async function xlServerSave(file){
   }
 }
 async function xlServerClear(){
-  try{ const fd=new FormData(); fd.append("action","clear"); await xlPost(fd); return ""; }
+  try{ await xlPost({ action:"clear" }); return ""; }
   catch(err){ return err.message; }
 }
 let XL_STORE = null; // { file, savedAt, current, sheets:{ name:{title,items} } }
@@ -506,13 +509,15 @@ xlRender();
 (async function(){
   let d=null, fromHost=false;
   try{
-    const r = await fetch(XL_API+"?action=get&t="+Date.now(), { cache:"no-store" });
-    if(r.ok){ const j = await r.json(); if(j && j.sheets){ d=j; fromHost=true; } }
+    if(XL_API){
+      const r = await fetch(XL_API+"?t="+Date.now(), { cache:"no-store" });
+      if(r.ok){ const j = await r.json(); if(j && j.sheets){ d=j; fromHost=true; } }
+    }
   }catch(e){}
   if(!d){ try{ const raw=localStorage.getItem(XL_KEY); if(raw) d=JSON.parse(raw); }catch(e){} }
   if(d && d.sheets && d.sheets[d.current]){
     XL_STORE=d; xlFillSelect(); xlShowSheet(d.current);
-    if(d.items===undefined && XL_ITEMS.length && fromHost){
+    if(fromHost && XL_ITEMS.length){
       $("xlStatus").textContent = "Dữ liệu từ host: "+(d.file||"")+(d.savedAt?" · cập nhật "+new Date(d.savedAt).toLocaleString("vi-VN"):"");
     }
   }
