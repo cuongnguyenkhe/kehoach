@@ -26,8 +26,8 @@
   header p{margin:4px 0 0;opacity:1;font-size:16px;font-weight:700;color:var(--text)}
   @media(max-width:700px){ header h1{font-size:22px} .headwrap .unit{font-size:18px} }
 
-  #subtitle,#xlTitle{background:#fff;padding:14px 24px;border-bottom:1px solid var(--line);border-radius:8px}
-  #subtitle:empty,#xlTitle:empty{display:none}
+  #subtitle{background:#fff;padding:14px 24px;border-bottom:1px solid var(--line);border-radius:8px}
+  #subtitle:empty{display:none}
 
   /* ===== Control bar (sticky) ===== */
   .controlbar{position:static;background:#fff;width:100%;border-bottom:1px solid var(--line);border-radius:8px}
@@ -76,21 +76,6 @@
   .tag{display:inline-block;background:#eef3ff;color:#1f2937;border:1px solid #d6e0ff;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:12.5px;font-weight:700}
   .empty{color:var(--muted);font-style:italic;font-size:13px}
 
-  /* ===== Excel KHSX ===== */
-  .xlbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .xlbar input[type=file]{flex:1;min-width:220px}
-  .xlgrid{display:flex;flex-direction:column;gap:14px}
-  .xlcol{display:flex;flex-direction:column;gap:14px;min-width:0}
-  .doi{color:#7c3aed;font-weight:700}
-  .xlgrp{font-size:inherit;font-weight:700;color:#7c3aed;margin:12px 0 4px}
-  .xlgrp .tba-cnt{color:#dc2626}
-  .wk{padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
-  .wk:last-child{border-bottom:0}
-  .wk .loc{display:inline-block;background:#eef3ff;border:1px solid #d6e0ff;border-radius:6px;padding:1px 8px;margin-right:6px;font-weight:700}
-  .wk .txt{white-space:pre-line;margin-top:3px}
-  .wk .meta{color:var(--muted);font-size:12px;margin-top:3px}
-  .wk .meta b{color:var(--text);font-weight:600}
-
   @media(max-width:700px){
     body{padding:10px}
     header{padding:16px}
@@ -128,18 +113,6 @@
     </div>
     <div class="summary" id="summary"></div>
   </section>
-
-  <section class="block">
-    <div class="resultTitle" id="xlTitle" style="justify-content:center;text-align:center"></div>
-    <div class="xlbar">
-      <input type="file" id="xlFile" accept=".xlsx,.xlsm,.xls">
-      <select id="xlSheet" style="display:none"></select>
-      <button class="ghost" id="xlClear" style="display:none">Xóa dữ liệu đã lưu</button>
-      <span class="desc" id="xlStatus">Chưa chọn file.</span>
-    </div>
-    <div class="xlgrid" id="xlOut"></div>
-  </section>
-
 </main>
 
 <script>
@@ -157,8 +130,6 @@ const pad = n => String(n).padStart(2,"0");
 const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtVN = d => `${WD[d.getDay()]}, ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-/* escape + tô màu chữ "Đội ..." xuất hiện trong dữ liệu */
-function hl(t){ return esc(t).replace(/(Đội(?:\s*QLVH)?(?:\s*\d+)?)/g,'<span class="doi">$1</span>'); }
 function setStatus(t, err){ const s=$("status"); s.textContent=t||""; s.className = err?"err":""; }
 
 function parseSheetUrl(u){
@@ -333,195 +304,6 @@ function render(){
     sm.appendChild(box);
   }
 }
-
-/* ===== Excel KHSX: Đội → Phần trạm/Đường dây → Công tác trong ngày / dài ngày ===== */
-const XL_CARDS = [
-  { grp:"dai",   part:"tba", cls:"thang", title:"Công tác dài ngày – TBA" },
-  { grp:"dai",   part:"dz",  cls:"thang", title:"Công tác dài ngày – Đường dây" },
-  { grp:"trong", part:"tba", cls:"ngay",  title:"Công tác trong ngày – TBA" },
-  { grp:"trong", part:"dz",  cls:"ngay",  title:"Công tác trong ngày – Đường dây" }
-];
-let XL_ITEMS = [], XL_TITLE = "";
-
-function parseKH(rows){
-  const s = v => String(v ?? "").replace(/\s+/g," ").trim();
-  const multi = v => String(v ?? "").replace(/[ \t]+/g," ").replace(/\n\s*/g,"\n").trim();
-  let title="", team=null, part=null, grp=null; const items=[];
-  for(const r of rows){
-    const a=s(r[0]), b=s(r[1]), nb=norm(b);
-    if(!title && a.length>10) title=a;
-    const mt = nb.match(/^doi\s*qlvh\s*(\d+)/);
-    if(mt){ team=mt[1]; part=null; grp=null; continue; }
-    if((a==="A"||a==="B") && nb.startsWith("phan")){
-      part = nb.includes("tram") ? "tba" : (nb.includes("duong day") ? "dz" : null); grp=null; continue;
-    }
-    if(/^\d+$/.test(a) && b){
-      grp = nb.startsWith("cong tac trong ngay") ? "trong" : nb.startsWith("cong tac dai ngay") ? "dai" : "other"; continue;
-    }
-    if(team && part && (grp==="trong"||grp==="dai") && /^\d+\.\d+$/.test(a)){
-      const it = { team, part, grp, date:b, loc:s(r[2]), text:multi(r[3]), who:s(r[4]), unit:s(r[5]), time:s(r[6]), note:s(r[9]) };
-      if(it.loc||it.text||it.unit||it.time) items.push(it);
-    }
-  }
-  return { title, items };
-}
-
-function xlRender(){
-  $("xlTitle").textContent = XL_TITLE || "";
-  const out=$("xlOut"); out.innerHTML="";
-  const cols={ dai:document.createElement("div"), trong:document.createElement("div") };
-  for(const k in cols){ cols[k].className="xlcol"; out.appendChild(cols[k]); }
-  for(const c of XL_CARDS){
-    const list = XL_ITEMS.filter(i=>i.grp===c.grp && i.part===c.part);
-    const teams = [...new Set(list.map(i=>i.team))].sort((x,y)=>x-y);
-    const box=document.createElement("div"); box.className="sbox "+c.cls;
-    box.innerHTML = `<h3>${c.title}:<span class="cnt">${list.length} công tác</span></h3>` + (teams.length
-      ? teams.map(t=>{
-          const L=list.filter(i=>i.team===t);
-          return `<div class="xlgrp">Đội ${t}: <span class="tba-cnt">${L.length} công tác</span></div>` + L.map(i=>`
-            <div class="wk">
-              ${i.loc?`<span class="loc">${hl(i.loc)}</span>`:""}${i.date?`<span class="tag">${esc(i.date)}</span>`:""}
-              <div class="txt">${hl(i.text||"(không có nội dung)")}</div>
-              <div class="meta">${[i.unit&&`<b>ĐVTC:</b> ${hl(i.unit)}`, i.who&&`<b>Người TH:</b> ${hl(i.who)}`, i.time&&`<b>Thời gian:</b> ${esc(i.time)}`, i.note&&`<b>Ghi chú:</b> ${hl(i.note)}`].filter(Boolean).join(" · ")}</div>
-            </div>`).join("");
-        }).join("")
-      : `<div class="empty">Không có công tác.</div>`);
-    cols[c.grp].appendChild(box);
-  }
-}
-
-const XL_KEY = "tba_xl_data";
-/* Dán link Web App của Google Apps Script vào đây (xem hướng dẫn), dạng https://script.google.com/macros/s/.../exec */
-const XL_API = "https://script.google.com/macros/s/AKfycbwkr1PqkCYuaJ-x4BshbjME7myymBbCYAs_tOWSUq0CuwG4X2qlNnCX3hEbruNNRA8c/exec";
-function xlKey(){ try{ return localStorage.getItem("tba_xl_key")||""; }catch(e){ return ""; } }
-function fileToB64(f){
-  return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(",")[1]); r.onerror=()=>no(new Error("không đọc được file")); r.readAsDataURL(f); });
-}
-async function xlPost(obj){
-  if(!XL_API) throw new Error("chưa dán link Google Apps Script vào XL_API trong index.html");
-  for(let attempt=0; attempt<3; attempt++){
-    obj.key = xlKey();
-    const res = await fetch(XL_API, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:JSON.stringify(obj) });
-    let j=null; try{ j = await res.json(); }catch(_){}
-    if(j && j.code===401){
-      const k = prompt(attempt ? "Mật khẩu sai. Nhập lại mật khẩu:" : "Nhập mật khẩu để lưu/xóa dữ liệu trên host:");
-      if(k===null) throw new Error("đã hủy nhập mật khẩu");
-      try{ localStorage.setItem("tba_xl_key", k); }catch(e){}
-      continue;
-    }
-    if(!res.ok || !j || !j.ok) throw new Error((j && j.error) || ("HTTP "+res.status));
-    return j;
-  }
-  throw new Error("sai mật khẩu");
-}
-/* Lưu file Excel + dữ liệu đã đọc lên Google Drive; file cũ tự bị xóa */
-async function xlServerSave(file){
-  const st=$("xlStatus");
-  st.style.color=""; st.textContent="Đang lưu lên host…";
-  try{
-    await xlPost({ action:"save", name:file.name, fileB64:await fileToB64(file), json:XL_STORE });
-    st.style.color="#16a34a";
-    st.textContent="✔ Đã lưu lên host: "+file.name+" (file cũ đã được thay thế). Mở ở nơi khác vẫn có dữ liệu.";
-  }catch(err){
-    st.style.color="#dc2626";
-    st.textContent="Chưa lưu được lên host ("+err.message+"). Dữ liệu chỉ lưu trên trình duyệt này.";
-  }
-}
-async function xlServerClear(){
-  try{ await xlPost({ action:"clear" }); return ""; }
-  catch(err){ return err.message; }
-}
-let XL_STORE = null; // { file, savedAt, current, sheets:{ name:{title,items} } }
-
-function xlSave(){ try{ localStorage.setItem(XL_KEY, JSON.stringify(XL_STORE)); }catch(e){ $("xlStatus").textContent += " (Không lưu được vào trình duyệt)"; } }
-
-/* Tiêu đề sheet KQ chỉ có "NGÀY 23/11" → bổ sung năm (lấy từ tên sheet, vd "KQ 23.11.26") */
-function withYear(t, name){
-  if(!t || /\d{1,2}\/\d{1,2}\/\d{4}/.test(t)) return t;
-  const m = t.match(/(\d{1,2})\/(\d{1,2})(?![\/\d])/); if(!m) return t;
-  const yy = (String(name).match(/\.(\d{2})\s*$/)||[])[1];
-  const y = yy ? 2000 + (+yy) : (DATA.year || new Date().getFullYear());
-  return t.replace(m[0], m[0] + "/" + y);
-}
-
-function xlShowSheet(name){
-  const r = XL_STORE.sheets[name]; if(!r) return;
-  XL_STORE.current = name; XL_ITEMS = r.items; XL_TITLE = withYear(r.title, name);
-  $("xlStatus").style.color="";
-  $("xlStatus").textContent = r.items.length ? "" : "Không đọc được công tác nào trong sheet này. Hãy chọn sheet khác ở ô bên cạnh.";
-  $("xlSheet").value = name;
-  xlRender(); xlSave();
-}
-
-function xlFillSelect(){
-  const sel=$("xlSheet"); sel.innerHTML="";
-  const rank = n => /^kq\b/i.test(n.trim()) ? 0 : /^kh\b/i.test(n.trim()) ? 1 : 2;
-  const names = Object.keys(XL_STORE.sheets).sort((a,b)=>rank(a)-rank(b));
-  names.forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n.trim(); sel.appendChild(o); });
-  sel.style.display = names.length>1 ? "" : "none";
-  $("xlClear").style.display = "";
-}
-
-function loadScript(src){
-  return new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error(src)); document.head.appendChild(s); });
-}
-async function ensureXLSX(){
-  if(window.XLSX) return;
-  for(const u of ["https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js","https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"]){
-    try{ await loadScript(u); if(window.XLSX) return; }catch(e){}
-  }
-  throw new Error("không tải được thư viện đọc Excel (mạng có thể chặn cdnjs/jsdelivr)");
-}
-
-$("xlFile").onchange = async e => {
-  const f = e.target.files[0]; if(!f) return;
-  /* Xóa dữ liệu Excel cũ (cả bản đã lưu) trước khi nạp file mới */
-  try{ localStorage.removeItem(XL_KEY); }catch(_){}
-  XL_STORE=null; XL_ITEMS=[]; XL_TITLE=""; xlRender();
-  $("xlSheet").style.display="none"; $("xlClear").style.display="none";
-  $("xlStatus").textContent = "Đang đọc file…"; $("xlStatus").style.color="";
-  try{
-    await ensureXLSX();
-    const wb = XLSX.read(await f.arrayBuffer(), { type:"array" });
-    const sheets = {};
-    wb.SheetNames.forEach(n=>{
-      sheets[n] = parseKH(XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, defval:"", raw:false }));
-    });
-    const names = Object.keys(sheets);
-    const kh = names.find(n=>/^kq\b/i.test(n.trim())) || names.find(n=>/^kh\b/i.test(n.trim())) || names.find(n=>sheets[n].items.length) || names[0];
-    XL_STORE = { file:f.name, savedAt:Date.now(), current:kh, sheets };
-    xlFillSelect(); xlShowSheet(kh);
-    await xlServerSave(f);
-    e.target.value = "";
-  }catch(err){ $("xlStatus").textContent = "Lỗi: " + err.message; $("xlStatus").style.color="#dc2626"; }
-};
-$("xlSheet").onchange = e => xlShowSheet(e.target.value);
-$("xlClear").onclick = async () => {
-  if(!confirm("Xóa dữ liệu Excel đã lưu trên host và trên trình duyệt này?")) return;
-  const msg = await xlServerClear();
-  try{ localStorage.removeItem(XL_KEY); }catch(e){}
-  XL_STORE=null; XL_ITEMS=[]; XL_TITLE=""; $("xlFile").value=""; $("xlSheet").style.display="none"; $("xlClear").style.display="none";
-  $("xlStatus").style.color=msg?"#dc2626":"";
-  $("xlStatus").textContent = msg ? "Đã xóa trên trình duyệt nhưng chưa xóa được trên host: "+msg : "Chưa chọn file."; xlRender();
-};
-/* Khôi phục dữ liệu Excel khi mở trang: ưu tiên bản lưu trên host, dự phòng bản trong trình duyệt */
-xlRender();
-(async function(){
-  let d=null, fromHost=false;
-  try{
-    if(XL_API){
-      const r = await fetch(XL_API+"?t="+Date.now(), { cache:"no-store" });
-      if(r.ok){ const j = await r.json(); if(j && j.sheets){ d=j; fromHost=true; } }
-    }
-  }catch(e){}
-  if(!d){ try{ const raw=localStorage.getItem(XL_KEY); if(raw) d=JSON.parse(raw); }catch(e){} }
-  if(d && d.sheets && d.sheets[d.current]){
-    XL_STORE=d; xlFillSelect(); xlShowSheet(d.current);
-    if(fromHost && XL_ITEMS.length){
-      $("xlStatus").textContent = "Dữ liệu từ host: "+(d.file||"")+(d.savedAt?" · cập nhật "+new Date(d.savedAt).toLocaleString("vi-VN"):"");
-    }
-  }
-})();
 
 let saved=""; try{ saved = localStorage.getItem("tba_filter_url") || ""; }catch(e){}
 $("urlInput").value = saved || DEFAULT_URL;
