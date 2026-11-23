@@ -271,7 +271,7 @@ function render(){
   const idx = selectedIndex();
   const d = selectedDate();
   const isToday = d && toISO(d)===toISO(new Date());
-  $("subtitle").innerHTML = `Kế hoạch kiểm tra TBA 110/220kV tháng${DATA.month}/${DATA.year}: <span style="color:#ff3b3b">${DATA.tba.length} TBA</span>`;
+  $("subtitle").innerHTML = `Kế hoạch kiểm tra TBA 110/220kV tháng ${DATA.month}/${DATA.year}: <span style="color:#ff3b3b">${DATA.tba.length} TBA</span>`;
 
   const fmtNgay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
   $("resultTitle").innerHTML = d
