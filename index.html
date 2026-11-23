@@ -391,6 +391,43 @@ function xlRender(){
 }
 
 const XL_KEY = "tba_xl_data";
+const XL_API = "api.php";   /* file api.php đặt cùng thư mục với index.html trên host */
+function xlKey(){ try{ return localStorage.getItem("tba_xl_key")||""; }catch(e){ return ""; } }
+async function xlPost(fd){
+  for(let attempt=0; attempt<3; attempt++){
+    fd.set("key", xlKey());
+    const res = await fetch(XL_API, { method:"POST", body:fd });
+    let j=null; try{ j = await res.json(); }catch(_){}
+    if(res.status===401){
+      const k = prompt(attempt ? "Mật khẩu sai. Nhập lại mật khẩu:" : "Nhập mật khẩu để lưu/xóa dữ liệu trên host:");
+      if(k===null) throw new Error("đã hủy nhập mật khẩu");
+      try{ localStorage.setItem("tba_xl_key", k); }catch(e){}
+      continue;
+    }
+    if(!res.ok || !j || !j.ok) throw new Error((j && j.error) || ("HTTP "+res.status+" – host chưa có api.php hoặc không chạy PHP?"));
+    return j;
+  }
+  throw new Error("sai mật khẩu");
+}
+/* Lưu file Excel + dữ liệu đã đọc lên host; host tự xóa file cũ */
+async function xlServerSave(file){
+  const st=$("xlStatus");
+  st.style.color=""; st.textContent="Đang lưu lên host…";
+  try{
+    const fd=new FormData();
+    fd.append("action","save"); fd.append("file",file); fd.append("json",JSON.stringify(XL_STORE));
+    await xlPost(fd);
+    st.style.color="#16a34a";
+    st.textContent="✔ Đã lưu lên host: "+file.name+" (file cũ đã được thay thế). Mở ở nơi khác vẫn có dữ liệu.";
+  }catch(err){
+    st.style.color="#dc2626";
+    st.textContent="Chưa lưu được lên host ("+err.message+"). Dữ liệu chỉ lưu trên trình duyệt này.";
+  }
+}
+async function xlServerClear(){
+  try{ const fd=new FormData(); fd.append("action","clear"); await xlPost(fd); return ""; }
+  catch(err){ return err.message; }
+}
 let XL_STORE = null; // { file, savedAt, current, sheets:{ name:{title,items} } }
 
 function xlSave(){ try{ localStorage.setItem(XL_KEY, JSON.stringify(XL_STORE)); }catch(e){ $("xlStatus").textContent += " (Không lưu được vào trình duyệt)"; } }
@@ -451,22 +488,35 @@ $("xlFile").onchange = async e => {
     const kh = names.find(n=>/^kq\b/i.test(n.trim())) || names.find(n=>/^kh\b/i.test(n.trim())) || names.find(n=>sheets[n].items.length) || names[0];
     XL_STORE = { file:f.name, savedAt:Date.now(), current:kh, sheets };
     xlFillSelect(); xlShowSheet(kh);
+    await xlServerSave(f);
     e.target.value = "";
   }catch(err){ $("xlStatus").textContent = "Lỗi: " + err.message; $("xlStatus").style.color="#dc2626"; }
 };
 $("xlSheet").onchange = e => xlShowSheet(e.target.value);
-$("xlClear").onclick = () => {
-  if(!confirm("Xóa dữ liệu Excel đã lưu trên trình duyệt này?")) return;
+$("xlClear").onclick = async () => {
+  if(!confirm("Xóa dữ liệu Excel đã lưu trên host và trên trình duyệt này?")) return;
+  const msg = await xlServerClear();
   try{ localStorage.removeItem(XL_KEY); }catch(e){}
   XL_STORE=null; XL_ITEMS=[]; XL_TITLE=""; $("xlFile").value=""; $("xlSheet").style.display="none"; $("xlClear").style.display="none";
-  $("xlStatus").textContent="Chưa chọn file."; xlRender();
+  $("xlStatus").style.color=msg?"#dc2626":"";
+  $("xlStatus").textContent = msg ? "Đã xóa trên trình duyệt nhưng chưa xóa được trên host: "+msg : "Chưa chọn file."; xlRender();
 };
-/* Khôi phục dữ liệu Excel đã lưu khi mở lại trang */
-try{
-  const raw = localStorage.getItem(XL_KEY);
-  if(raw){ const d = JSON.parse(raw); if(d && d.sheets && d.sheets[d.current]){ XL_STORE=d; xlFillSelect(); xlShowSheet(d.current); } }
-}catch(e){}
-if(!XL_STORE) xlRender();
+/* Khôi phục dữ liệu Excel khi mở trang: ưu tiên bản lưu trên host, dự phòng bản trong trình duyệt */
+xlRender();
+(async function(){
+  let d=null, fromHost=false;
+  try{
+    const r = await fetch(XL_API+"?action=get&t="+Date.now(), { cache:"no-store" });
+    if(r.ok){ const j = await r.json(); if(j && j.sheets){ d=j; fromHost=true; } }
+  }catch(e){}
+  if(!d){ try{ const raw=localStorage.getItem(XL_KEY); if(raw) d=JSON.parse(raw); }catch(e){} }
+  if(d && d.sheets && d.sheets[d.current]){
+    XL_STORE=d; xlFillSelect(); xlShowSheet(d.current);
+    if(d.items===undefined && XL_ITEMS.length && fromHost){
+      $("xlStatus").textContent = "Dữ liệu từ host: "+(d.file||"")+(d.savedAt?" · cập nhật "+new Date(d.savedAt).toLocaleString("vi-VN"):"");
+    }
+  }
+})();
 
 let saved=""; try{ saved = localStorage.getItem("tba_filter_url") || ""; }catch(e){}
 $("urlInput").value = saved || DEFAULT_URL;
