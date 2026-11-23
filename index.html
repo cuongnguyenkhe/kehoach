@@ -76,6 +76,23 @@
   .tag{display:inline-block;background:#eef3ff;color:#1f2937;border:1px solid #d6e0ff;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:12.5px;font-weight:700}
   .empty{color:var(--muted);font-style:italic;font-size:13px}
 
+  /* ===== Vùng 2: Kết quả công tác (xếp theo hàng dọc) ===== */
+  .kqlist{display:flex;flex-direction:column;gap:14px}
+  .kqbox{background:#fff;border:1px solid #eef0f6;border-top:4px solid var(--c,#3a6ff7);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+  .kqbox.c1{--c:#3a6ff7} .kqbox.c2{--c:#7c3aed} .kqbox.c3{--c:#16a34a} .kqbox.c4{--c:#f25a6b}
+  .kqbox > h3{margin:0 0 10px;font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--c)}
+  .kqbox > h3 .cnt{color:#dc2626}
+  .kq-team{margin:12px 0 0}
+  .kq-team > b{display:block;color:#7c3aed;font-weight:700;margin-bottom:6px}
+  .kq-team > b .tba-cnt{color:#dc2626}
+  .kq-item{border:1px solid var(--line);border-left:3px solid var(--c,#3a6ff7);border-radius:8px;padding:8px 10px;margin:6px 0;background:#fafbff}
+  .kq-item .kq-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px}
+  .kq-item .kq-time{font-size:12.5px;color:#374151;font-weight:700}
+  .kq-item .kq-content{white-space:pre-line;font-size:13px;line-height:1.5}
+  .kq-item .kq-meta{margin-top:5px;font-size:12.5px;color:#4b5563}
+  .kq-item .kq-meta span{display:inline-block;margin-right:12px}
+  .kq-item .kq-meta em{font-style:normal;font-weight:700;color:#374151}
+
   @media(max-width:700px){
     body{padding:10px}
     header{padding:16px}
@@ -112,6 +129,24 @@
       <span class="desc" id="status">Đang tải…</span>
     </div>
     <div class="summary" id="summary"></div>
+  </section>
+
+  <!-- ===== Vùng 2: kết quả công tác ===== -->
+  <section class="block">
+    <div class="resultTitle" id="kqSubtitle" style="justify-content:center;text-align:center;background:#fff;padding:14px 24px;border-radius:8px"></div>
+    <div class="controlbar">
+      <div class="controlbar-inner">
+        <div class="field grow">
+          <span>Dữ liệu từ Link Google Sheet: <a class="openlink" id="kqOpenLink" href="#" target="_blank" rel="noopener" style="text-transform:none;letter-spacing:normal;margin-left:6px">Mở trong tab mới ↗</a></span>
+          <input type="url" id="kqUrlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
+        </div>
+      </div>
+    </div>
+    <div class="block-head">
+      <h2 class="resultTitle" id="kqHeading">📋 Tổng hợp công tác</h2>
+      <span class="desc" id="kqStatus">Đang tải…</span>
+    </div>
+    <div class="kqlist" id="kqList"></div>
   </section>
 </main>
 
@@ -205,7 +240,7 @@ async function tryFetchCSV(url){
   return parseCSV(t);
 }
 
-function jsonpLoad(url){
+function jsonpLoad(url, fmt){
   return new Promise((resolve,reject)=>{
     const cb="__gv"+Date.now()+Math.floor(Math.random()*1e4);
     const s=document.createElement("script");
@@ -217,7 +252,7 @@ function jsonpLoad(url){
         const e=obj&&obj.errors&&obj.errors[0];
         reject(new Error((e&&(e.detailed_message||e.message))||"Google báo lỗi")); return;
       }
-      resolve(obj.table.rows.map(r=>(r.c||[]).map(c=> c ? (c.v!=null ? String(c.v) : (c.f??"")) : "")));
+      resolve(obj.table.rows.map(r=>(r.c||[]).map(c=> c ? (fmt ? (c.f ?? (c.v!=null ? String(c.v) : "")) : (c.v!=null ? String(c.v) : (c.f??""))) : "")));
     };
     s.onload=()=>{ if(window[cb]){ cleanup(); reject(new Error("Google trả về trang đăng nhập (sheet chưa chia sẻ công khai?)")); } };
     s.onerror=()=>{ cleanup(); reject(new Error("không kết nối được tới Google (mạng bị chặn?)")); };
@@ -271,7 +306,7 @@ function render(){
   const idx = selectedIndex();
   const d = selectedDate();
   const isToday = d && toISO(d)===toISO(new Date());
-  $("subtitle").innerHTML = `KẾ HOẠCH KIỂM TRA TBA 110/220KV THÁNG: ${DATA.month}/${DATA.year}`;
+  $("subtitle").innerHTML = `KẾ HOẠCH KIỂM TRA TBA 110/220KV THÁNG ${DATA.month}/${DATA.year}`;
 
   const fmtNgay = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
   $("resultTitle").innerHTML = d
@@ -313,6 +348,182 @@ $("loadBtn").onclick = loadFromGoogle;
 $("urlInput").addEventListener("keydown", e => { if(e.key==="Enter") loadFromGoogle(); });
 
 loadFromGoogle();
+
+/* ================= VÙNG 2: KẾT QUẢ CÔNG TÁC (sheet KHSX) ================= */
+const KQ_DEFAULT_URL = "https://docs.google.com/spreadsheets/d/1QU3ays0XhYfrwSYihN9caYTMsP1ibhm-eTsWJfnWBEI/edit?usp=sharing";
+const KQ_GROUPS = [
+  { key:"tba_ngay", cls:"c1", title:"Công tác trong ngày TBA" },
+  { key:"tba_dai",  cls:"c2", title:"Công tác dài ngày TBA" },
+  { key:"dz_ngay",  cls:"c3", title:"Công tác trong ngày đường dây" },
+  { key:"dz_dai",   cls:"c4", title:"Công tác dài ngày đường dây" }
+];
+let KQ = { title:"", groups:{} };
+
+function setKqStatus(t, err){ const s=$("kqStatus"); s.textContent=t||""; s.className = "desc" + (err?" err":""); if(err){ s.style.color="#dc2626"; s.style.whiteSpace="pre-line"; } else { s.style.color=""; s.style.whiteSpace=""; } }
+
+function parseKQ(rows){
+  const out = { title:"", groups:{} };
+  KQ_GROUPS.forEach(g=>out.groups[g.key]=[]);
+
+  /* Nhận diện cột theo dòng tiêu đề bảng */
+  const col = {};
+  for(let i=0;i<Math.min(rows.length,25);i++){
+    const r = rows[i].map(norm);
+    if(r.some(c=>c.startsWith("dia diem"))){
+      r.forEach((c,j)=>{
+        if(c==="ngay" && col.ngay==null) col.ngay=j;
+        else if(c.startsWith("dia diem")) col.dd=j;
+        else if(c.startsWith("noi dung")) col.nd=j;
+        else if(c.startsWith("nguoi thuc hien")) col.nth=j;
+        else if(c.startsWith("don vi")) col.dv=j;
+        else if(c.startsWith("ghi chu")) col.gc=j;
+      });
+      for(let k=i;k<=i+2 && k<rows.length;k++){
+        rows[k].map(norm).forEach((c,j)=>{
+          if(c==="ke hoach") col.kh=j;
+          else if(c==="bat dau") col.bd=j;
+          else if(c==="ket thuc") col.kt=j;
+        });
+      }
+      break;
+    }
+  }
+  const have = col.dd!=null && col.nd!=null;
+  const get = (r,j)=> (j!=null ? String(r[j]??"").trim() : "");
+
+  let team="", section="", cat="";
+  for(const r of rows){
+    const cells = r.map(c=>String(c??"").trim());
+    const nonEmpty = cells.filter(Boolean);
+    if(!nonEmpty.length) continue;
+    const text = norm(nonEmpty.join(" ")).replace(/\s+/g," ");
+    if(!out.title && /ket qua van hanh luoi dien/.test(text)) out.title = nonEmpty.join(" ");
+
+    let m;
+    if((m = text.match(/^([ivx]+)\s+(doi\b.*)$/))){
+      team = nonEmpty.join(" ").replace(/^[IVXivx]+\s+/,"").replace(/\s*:?\s*\(.*$/,"").trim();
+      section=""; cat=""; continue;
+    }
+    if(/^[a-d]\s+phan\s+tram/.test(text)){ section="tba"; cat=""; continue; }
+    if(/^[a-d]\s+phan\s+duong\s+day/.test(text)){ section="dz"; cat=""; continue; }
+    if(/^\d+\s+cong tac\b/.test(text)){
+      cat = /cong tac trong ngay/.test(text) ? "ngay" : /cong tac dai ngay/.test(text) ? "dai" : "";
+      continue;
+    }
+    /* dòng công tác: ô đầu tiên có dạng 1.1, 2.10 ... */
+    if(/^\d+\.\d+$/.test(nonEmpty[0]) && section && cat){
+      let it;
+      if(have){
+        it = { date:get(r,col.ngay), loc:get(r,col.dd), content:get(r,col.nd), who:get(r,col.nth), unit:get(r,col.dv),
+               plan:get(r,col.kh), start:get(r,col.bd), end:get(r,col.kt), note:get(r,col.gc) };
+      } else {
+        const v = nonEmpty.slice(1);
+        it = { date:v[0]||"", loc:v[1]||"", content:v[2]||"", who:"", unit:"", plan:"", start:"", end:"", note:v.slice(3).join(" ") };
+      }
+      it.team = team || "(Chưa rõ đội)";
+      out.groups[section+"_"+cat].push(it);
+    }
+  }
+  return out;
+}
+
+/* Nối các dòng bị ngắt cứng trong ô Google Sheet; chỉ xuống dòng ở gạch đầu dòng / dòng ngăn cách */
+function tidy(s){
+  const out=[];
+  String(s||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    const isSep = /^[-–—_=\s]{3,}$/.test(l);
+    const isBullet = /^['‘’]?\s*[-–•+*]\s*\S/.test(l) && !isSep;
+    if(!out.length || isSep || isBullet || /^[-–—_=\s]{3,}$/.test(out[out.length-1])) out.push(l);
+    else out[out.length-1] += " " + l;
+  });
+  return out.join("\n");
+}
+const flat = s => String(s||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean).join(", ");
+
+function renderKQ(){
+  $("kqSubtitle").textContent = KQ.title || "KẾT QUẢ VẬN HÀNH LƯỚI ĐIỆN";
+  /* Ngày lấy từ tiêu đề sheet (hoặc ngày của công tác đầu tiên) */
+  let kqDate = (KQ.title.match(/\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{4})?/)||[])[0] || "";
+  if(!kqDate){
+    for(const g of KQ_GROUPS){ const it=(KQ.groups[g.key]||[])[0]; if(it && /\d{1,2}\s*\/\s*\d{1,2}/.test(it.date)){ kqDate=it.date.trim(); break; } }
+  }
+  kqDate = kqDate.replace(/\s+/g,"");
+  if(kqDate && !/\/\d{4}$/.test(kqDate)) kqDate += "/" + (DATA.year || new Date().getFullYear());
+  $("kqHeading").textContent = "📋 Tổng hợp công tác" + (kqDate ? " ngày " + kqDate : "");
+  /* Tiêu đề sheet: hiện đủ ngày/tháng/năm */
+  if(kqDate){
+    const base = KQ.title || "KẾT QUẢ VẬN HÀNH LƯỚI ĐIỆN NGÀY";
+    $("kqSubtitle").textContent = /\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{4})?/.test(base)
+      ? base.replace(/\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{4})?/, kqDate)
+      : base.replace(/\s*$/," ") + kqDate;
+  }
+  const wrap = $("kqList"); wrap.innerHTML="";
+  for(const g of KQ_GROUPS){
+    const items = KQ.groups[g.key] || [];
+    const byTeam = {};
+    items.forEach(it=>(byTeam[it.team] ??= []).push(it));
+    const teams = Object.keys(byTeam).sort((a,b)=>a.localeCompare(b,"vi",{numeric:true}));
+    const body = teams.length ? teams.map(tm=>{
+      const list = byTeam[tm].map(it=>{
+        const time = [it.plan && it.plan.replace(/\s*\n\s*/g," "), it.start && ("Bắt đầu: "+it.start), it.end && ("Kết thúc: "+it.end)].filter(Boolean).join(" · ");
+        const meta = [
+          it.who  ? `<span><em>Người thực hiện:</em> ${esc(flat(it.who))}</span>`  : "",
+          it.unit ? `<span><em>Đơn vị:</em> ${esc(flat(it.unit))}</span>`          : "",
+          it.note ? `<span><em>Ghi chú:</em> ${esc(tidy(it.note).replace(/\n/g," "))}</span>` : ""
+        ].join("");
+        return `<div class="kq-item">
+          <div class="kq-top">${it.loc?`<span class="tag">${esc(it.loc.replace(/\s*\n\s*/g," "))}</span>`:""}${time?`<span class="kq-time">⏱ ${esc(time)}</span>`:""}</div>
+          <div class="kq-content">${esc(tidy(it.content))}</div>
+          ${meta?`<div class="kq-meta">${meta}</div>`:""}
+        </div>`;
+      }).join("");
+      return `<div class="kq-team"><b>${esc(tm)}: <span class="tba-cnt">${byTeam[tm].length} công tác</span></b>${list}</div>`;
+    }).join("") : `<div class="empty">Không có công tác nào.</div>`;
+    const box = document.createElement("div");
+    box.className = "kqbox "+g.cls;
+    box.innerHTML = `<h3>${g.title}:<span class="cnt">${items.length} công tác</span></h3>${body}`;
+    wrap.appendChild(box);
+  }
+}
+
+async function loadKQ(){
+  const url = $("kqUrlInput").value.trim();
+  const p = parseSheetUrl(url);
+  if(!p){ setKqStatus("Link không hợp lệ. Hãy dán link Google Sheet dạng https://docs.google.com/spreadsheets/d/…", true); return; }
+  try{ localStorage.setItem("kq_filter_url", url); }catch(e){}
+  $("kqOpenLink").href = `https://docs.google.com/spreadsheets/d/${p.id}/edit${p.gid?("?gid="+p.gid):""}`;
+  setKqStatus("Đang tải từ Google Sheet…");
+  const g = p.gid ? `&gid=${p.gid}` : "";
+  const base = `https://docs.google.com/spreadsheets/d/${p.id}`;
+  const strategies = [
+    ["gviz JSONP", () => jsonpLoad(`${base}/gviz/tq?headers=0${g}`, true)],
+    ["gviz CSV",   () => tryFetchCSV(`${base}/gviz/tq?tqx=out:csv&headers=0${g}`)],
+    ["export CSV", () => tryFetchCSV(`${base}/export?format=csv${g}`)]
+  ];
+  const errs=[];
+  for(const [name,fn] of strategies){
+    try{
+      const rows = await fn();
+      const d = parseKQ(rows);
+      const total = KQ_GROUPS.reduce((a,g)=>a+d.groups[g.key].length,0);
+      /* sheet hợp lệ nếu nhận diện được cấu trúc (kể cả khi 4 nhóm đều 0 công tác) */
+      if(total>0 || d.title){
+        KQ = d;
+        setKqStatus(`Cập nhật mới nhất lúc: ${new Date().toLocaleTimeString("vi-VN")} ngày ${new Date().toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric"})}`);
+        renderKQ(); return;
+      }
+      errs.push(`${name}: đọc được ${rows.length} dòng nhưng không nhận diện được các mục công tác`);
+    }catch(e){ errs.push(`${name}: ${e.message}`); }
+  }
+  setKqStatus("Không đọc được Google Sheet. Chi tiết:\n"+errs.join("\n")+"\n\nHãy kiểm tra: (1) sheet đã chia sẻ \"Bất kỳ ai có đường liên kết – Người xem\"; (2) mở file HTML này bằng Chrome/Edge trực tiếp.", true);
+}
+
+let kqSaved=""; try{ kqSaved = localStorage.getItem("kq_filter_url") || ""; }catch(e){}
+$("kqUrlInput").value = kqSaved || KQ_DEFAULT_URL;
+$("kqUrlInput").addEventListener("change", loadKQ);
+$("kqUrlInput").addEventListener("keydown", e => { if(e.key==="Enter") loadKQ(); });
+renderKQ();
+loadKQ();
 </script>
 </body>
 </html>
