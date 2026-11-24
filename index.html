@@ -140,14 +140,6 @@
   <!-- ===== Vùng 2: kết quả công tác ===== -->
   <section class="block">
     <div class="resultTitle" id="kqSubtitle" style="justify-content:center;text-align:center;background:#fff;padding:14px 24px;border-radius:8px"></div>
-    <div class="controlbar">
-      <div class="controlbar-inner">
-        <div class="field grow">
-          <span>Dữ liệu từ Link Google Sheet: <a class="openlink" id="kqOpenLink" href="#" target="_blank" rel="noopener" style="text-transform:none;letter-spacing:normal;margin-left:6px">Mở trong tab mới ↗</a></span>
-          <input type="url" id="kqUrlInput" readonly tabindex="-1" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
-        </div>
-      </div>
-    </div>
     <div class="block-head">
       <span class="desc" id="kqStatus">Đang tải…</span>
     </div>
@@ -485,7 +477,6 @@ function renderKQ(){
 async function loadKQ(){
   const p = parseSheetUrl(KQ_DEFAULT_URL);
   if(!p){ setKqStatus("Link không hợp lệ. Hãy dán link Google Sheet dạng https://docs.google.com/spreadsheets/d/…", true); return; }
-  $("kqOpenLink").href = `https://docs.google.com/spreadsheets/d/${p.id}/edit${p.gid?("?gid="+p.gid):""}`;
   setKqStatus("Đang tải từ Google Sheet…");
   const g = p.gid ? `&gid=${p.gid}` : "";
   const base = `https://docs.google.com/spreadsheets/d/${p.id}`;
@@ -512,7 +503,6 @@ async function loadKQ(){
   setKqStatus("Không đọc được Google Sheet. Chi tiết:\n"+errs.join("\n")+"\n\nHãy kiểm tra: (1) sheet đã chia sẻ \"Bất kỳ ai có đường liên kết – Người xem\"; (2) mở file HTML này bằng Chrome/Edge trực tiếp.", true);
 }
 
-$("kqUrlInput").value = KQ_DEFAULT_URL;
 renderKQ();
 loadKQ();
 </script>
