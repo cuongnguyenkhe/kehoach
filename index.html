@@ -112,9 +112,7 @@
   .fabbar button:hover{background:#eef2ff;color:var(--accent)}
   body{padding-bottom:56px}
   @media print{.fabbar{display:none}}
-  /* Toàn màn hình: phóng to #page (chứa cả 2 nút) và cho nó tự cuộn */
-  #page:fullscreen{width:100%;height:100%;overflow-y:auto;background:linear-gradient(135deg,#3569fb 0%,#4f7dfb 55%,#6f93fb 100%);background-color:#4f7dfb;padding-bottom:56px}
-  #page:-webkit-full-screen{width:100%;height:100%;overflow-y:auto;background:linear-gradient(135deg,#3569fb 0%,#4f7dfb 55%,#6f93fb 100%);background-color:#4f7dfb;padding-bottom:56px}
+
 </style>
 </head>
 <body>
@@ -159,7 +157,6 @@
 </main>
 
 <div class="fabbar" id="fabbar">
-  <button type="button" id="btnFullscreen" title="Xem toàn màn hình">⛶ <span id="btnFullscreenText">Xem toàn màn hình</span></button>
   <button type="button" id="btnAutoScroll" title="Tự động cuộn trang kiểu marquee">▶ <span id="btnAutoScrollText">Tự động cuộn</span></button>
 </div>
 </div><!-- /#page -->
@@ -523,30 +520,16 @@ async function loadKQ(){
 renderKQ();
 loadKQ();
 
-/* ===== Nút: Xem toàn màn hình / Cuộn lên ===== */
+/* ===== Nút: Tự động cuộn ===== */
 (function(){
-  const de = $("page");
-  const reqFs  = de.requestFullscreen || de.webkitRequestFullscreen;
-  const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
-  const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
-  const btnFs = $("btnFullscreen"), txt = $("btnFullscreenText");
-  if(!reqFs){ btnFs.style.display = "none"; }   /* trình duyệt không hỗ trợ (vd. iPhone) */
-  const sync = () => { txt.textContent = isFs() ? "Thoát toàn màn hình" : "Xem toàn màn hình"; };
-  btnFs.addEventListener("click", () => {
-    try{ isFs() ? exitFs.call(document) : reqFs.call(de); }catch(e){}
-  });
-  document.addEventListener("fullscreenchange", () => { sync(); if(typeof resetPos === "function") resetPos(); });
-  document.addEventListener("webkitfullscreenchange", () => { sync(); if(typeof resetPos === "function") resetPos(); });
-
   /* Tự động cuộn kiểu marquee: chạy chậm, tới cuối thì nghỉ rồi quay về đầu và lặp lại liên tục cho đến khi bấm "Dừng cuộn" */
   const SPEED = 22;        /* px mỗi giây — chỉnh số này để nhanh/chậm */
   const HOLD  = 3000;      /* ms dừng ở cuối / đầu trang trước khi lặp */
   const btnAs = $("btnAutoScroll"), asTxt = $("btnAutoScrollText");
   let running = false, raf = 0, last = 0, pos = 0, holdUntil = 0, phase = "scroll";
-  const scroller = () => isFs() ? $("page") : null;   /* toàn màn hình: cuộn bên trong #page */
-  const getY = () => { const el = scroller(); return el ? el.scrollTop : window.scrollY; };
-  const setY = y => { const el = scroller(); if(el) el.scrollTop = y; else window.scrollTo(0, y); };
-  const maxY = () => { const el = scroller(); return el ? Math.max(0, el.scrollHeight - el.clientHeight) : Math.max(0, document.documentElement.scrollHeight - window.innerHeight); };
+  const getY = () => window.scrollY;
+  const setY = y => window.scrollTo(0, y);
+  const maxY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   function tick(t){
     if(!running) return;
     if(t < holdUntil){ last = t; raf = requestAnimationFrame(tick); return; }
@@ -564,7 +547,6 @@ loadKQ();
     }
     raf = requestAnimationFrame(tick);
   }
-  function resetPos(){ pos = getY(); last = 0; holdUntil = 0; phase = "scroll"; }
   function startAuto(){
     if(running) return;
     running = true; pos = getY(); last = 0; holdUntil = 0; phase = "scroll";
