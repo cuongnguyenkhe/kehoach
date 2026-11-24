@@ -550,7 +550,7 @@ loadKQ();
   function startAuto(){
     if(running) return;
     running = true; pos = getY(); last = 0; holdUntil = 0; phase = "scroll";
-    asTxt.textContent = "Dừng cuộn"; btnAs.firstChild.textContent = "⏸ ";
+    asTxt.textContent = "Dừng chạy"; btnAs.firstChild.textContent = "⏸ ";
     raf = requestAnimationFrame(tick);
   }
   function stopAuto(){
