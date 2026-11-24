@@ -105,9 +105,20 @@
     .controlbar-inner{padding:10px 16px}
     main{padding:14px 16px 30px}
   }
+
+  /* ===== Thanh nút nổi: toàn màn hình + cuộn lên ===== */
+  .fabbar{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:50;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:96vw}
+  .fabbar button{display:inline-flex;align-items:center;gap:6px;cursor:pointer;background:#fff;color:#1f2937;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;font-family:Arial,Helvetica,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.22);line-height:1.2}
+  .fabbar button:hover{background:#eef2ff;color:var(--accent)}
+  body{padding-bottom:56px}
+  @media print{.fabbar{display:none}}
+  /* Toàn màn hình: phóng to #page (chứa cả 2 nút) và cho nó tự cuộn */
+  #page:fullscreen{width:100%;height:100%;overflow-y:auto;background:linear-gradient(135deg,#3569fb 0%,#4f7dfb 55%,#6f93fb 100%);background-color:#4f7dfb;padding-bottom:56px}
+  #page:-webkit-full-screen{width:100%;height:100%;overflow-y:auto;background:linear-gradient(135deg,#3569fb 0%,#4f7dfb 55%,#6f93fb 100%);background-color:#4f7dfb;padding-bottom:56px}
 </style>
 </head>
 <body>
+<div id="page">
 <header>
   <div class="headwrap">
     <div class="unit">Đội giám sát<br>Trung tâm giám sát</div>
@@ -146,6 +157,12 @@
     <div class="kqlist" id="kqList"></div>
   </section>
 </main>
+
+<div class="fabbar" id="fabbar">
+  <button type="button" id="btnFullscreen" title="Xem toàn màn hình">⛶ <span id="btnFullscreenText">Xem toàn màn hình</span></button>
+  <button type="button" id="btnAutoScroll" title="Tự động cuộn trang kiểu marquee">▶ <span id="btnAutoScrollText">Tự động cuộn</span></button>
+</div>
+</div><!-- /#page -->
 
 <script>
 const $ = id => document.getElementById(id);
@@ -505,6 +522,62 @@ async function loadKQ(){
 
 renderKQ();
 loadKQ();
+
+/* ===== Nút: Xem toàn màn hình / Cuộn lên ===== */
+(function(){
+  const de = $("page");
+  const reqFs  = de.requestFullscreen || de.webkitRequestFullscreen;
+  const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
+  const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const btnFs = $("btnFullscreen"), txt = $("btnFullscreenText");
+  if(!reqFs){ btnFs.style.display = "none"; }   /* trình duyệt không hỗ trợ (vd. iPhone) */
+  const sync = () => { txt.textContent = isFs() ? "Thoát toàn màn hình" : "Xem toàn màn hình"; };
+  btnFs.addEventListener("click", () => {
+    try{ isFs() ? exitFs.call(document) : reqFs.call(de); }catch(e){}
+  });
+  document.addEventListener("fullscreenchange", () => { sync(); if(typeof resetPos === "function") resetPos(); });
+  document.addEventListener("webkitfullscreenchange", () => { sync(); if(typeof resetPos === "function") resetPos(); });
+
+  /* Tự động cuộn kiểu marquee: chạy chậm, tới cuối thì nghỉ rồi quay về đầu và lặp lại liên tục cho đến khi bấm "Dừng cuộn" */
+  const SPEED = 22;        /* px mỗi giây — chỉnh số này để nhanh/chậm */
+  const HOLD  = 3000;      /* ms dừng ở cuối / đầu trang trước khi lặp */
+  const btnAs = $("btnAutoScroll"), asTxt = $("btnAutoScrollText");
+  let running = false, raf = 0, last = 0, pos = 0, holdUntil = 0, phase = "scroll";
+  const scroller = () => isFs() ? $("page") : null;   /* toàn màn hình: cuộn bên trong #page */
+  const getY = () => { const el = scroller(); return el ? el.scrollTop : window.scrollY; };
+  const setY = y => { const el = scroller(); if(el) el.scrollTop = y; else window.scrollTo(0, y); };
+  const maxY = () => { const el = scroller(); return el ? Math.max(0, el.scrollHeight - el.clientHeight) : Math.max(0, document.documentElement.scrollHeight - window.innerHeight); };
+  function tick(t){
+    if(!running) return;
+    if(t < holdUntil){ last = t; raf = requestAnimationFrame(tick); return; }
+    if(phase === "end"){            /* hết thời gian nghỉ ở cuối -> về đầu trang */
+      pos = 0; setY(0); phase = "scroll"; holdUntil = t + HOLD; last = t;
+      raf = requestAnimationFrame(tick); return;
+    }
+    const dt = Math.min(100, t - (last || t)); last = t;
+    pos += SPEED * dt / 1000;
+    if(pos >= maxY()){
+      pos = maxY(); setY(pos);
+      phase = "end"; holdUntil = t + HOLD;
+    } else {
+      setY(pos);
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  function resetPos(){ pos = getY(); last = 0; holdUntil = 0; phase = "scroll"; }
+  function startAuto(){
+    if(running) return;
+    running = true; pos = getY(); last = 0; holdUntil = 0; phase = "scroll";
+    asTxt.textContent = "Dừng cuộn"; btnAs.firstChild.textContent = "⏸ ";
+    raf = requestAnimationFrame(tick);
+  }
+  function stopAuto(){
+    if(!running) return;
+    running = false; cancelAnimationFrame(raf);
+    asTxt.textContent = "Tự động cuộn"; btnAs.firstChild.textContent = "▶ ";
+  }
+  btnAs.addEventListener("click", () => running ? stopAuto() : startAuto());
+})();
 </script>
 </body>
 </html>
