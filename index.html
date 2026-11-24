@@ -556,7 +556,7 @@ loadKQ();
   function stopAuto(){
     if(!running) return;
     running = false; cancelAnimationFrame(raf);
-    asTxt.textContent = "Tự động cuộn"; btnAs.firstChild.textContent = "▶ ";
+    asTxt.textContent = "Tự động chạy"; btnAs.firstChild.textContent = "▶ ";
   }
   btnAs.addEventListener("click", () => running ? stopAuto() : startAuto());
 })();
