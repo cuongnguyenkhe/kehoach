@@ -28,7 +28,7 @@
 
   #subtitle{background:#fff;padding:14px 24px;border-bottom:1px solid var(--line);border-radius:8px}
   #subtitle:empty{display:none}
-  #subtitle,#kqSubtitle{color:#dc2626;font-weight:800;font-family:"Times New Roman",Times,serif}
+  #subtitle,#kqSubtitle{color:#dc2626;font-weight:700;font-size:16px;font-family:Arial,Helvetica,sans-serif}
 
   /* ===== Control bar (sticky) ===== */
   .controlbar{position:static;background:#fff;width:100%;border-bottom:1px solid var(--line);border-radius:8px}
@@ -149,7 +149,6 @@
       </div>
     </div>
     <div class="block-head">
-      <h2 class="resultTitle" id="kqHeading">📋 Tổng hợp công tác</h2>
       <span class="desc" id="kqStatus">Đang tải…</span>
     </div>
     <div class="kqlist" id="kqList"></div>
@@ -400,7 +399,7 @@ function parseKQ(rows){
     const nonEmpty = cells.filter(Boolean);
     if(!nonEmpty.length) continue;
     const text = norm(nonEmpty.join(" ")).replace(/\s+/g," ");
-    if(!out.title && /ket qua van hanh luoi dien/.test(text)) out.title = nonEmpty.join(" ");
+    if(!out.title && /(ket qua|ke hoach) van hanh luoi dien/.test(text)) out.title = nonEmpty.join(" ");
 
     let m;
     if((m = text.match(/^([ivx]+)\s+(doi\b.*)$/))){
@@ -443,8 +442,9 @@ function tidy(s){
 }
 const flat = s => String(s||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean).join(", ");
 
+const fixKQTitle = t => String(t||"").normalize("NFC").replace(/K[ẾE]T\s*QU[ẢA]/i,"KẾ HOẠCH");
 function renderKQ(){
-  $("kqSubtitle").textContent = KQ.title || "KẾT QUẢ VẬN HÀNH LƯỚI ĐIỆN";
+  $("kqSubtitle").textContent = fixKQTitle(KQ.title) || "KẾ HOẠCH VẬN HÀNH LƯỚI ĐIỆN";
   /* Ngày lấy từ tiêu đề sheet (hoặc ngày của công tác đầu tiên) */
   let kqDate = (KQ.title.match(/\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{4})?/)||[])[0] || "";
   if(!kqDate){
@@ -452,10 +452,9 @@ function renderKQ(){
   }
   kqDate = kqDate.replace(/\s+/g,"");
   if(kqDate && !/\/\d{4}$/.test(kqDate)) kqDate += "/" + (DATA.year || new Date().getFullYear());
-  $("kqHeading").textContent = "📋 Tổng hợp công tác" + (kqDate ? " ngày " + kqDate : "");
   /* Tiêu đề sheet: hiện đủ ngày/tháng/năm */
   if(kqDate){
-    const base = KQ.title || "KẾT QUẢ VẬN HÀNH LƯỚI ĐIỆN NGÀY";
+    const base = fixKQTitle(KQ.title) || "KẾ HOẠCH VẬN HÀNH LƯỚI ĐIỆN NGÀY";
     $("kqSubtitle").textContent = /\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{4})?/.test(base)
       ? base.replace(/\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{4})?/, kqDate)
       : base.replace(/\s*$/," ") + kqDate;
@@ -504,7 +503,7 @@ async function loadKQ(){
       /* sheet hợp lệ nếu nhận diện được cấu trúc (kể cả khi 4 nhóm đều 0 công tác) */
       if(total>0 || d.title){
         KQ = d;
-        setKqStatus(`Cập nhật mới nhất lúc: ${new Date().toLocaleTimeString("vi-VN")} ngày ${new Date().toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric"})}`);
+        setKqStatus("");
         renderKQ(); return;
       }
       errs.push(`${name}: đọc được ${rows.length} dòng nhưng không nhận diện được các mục công tác`);
