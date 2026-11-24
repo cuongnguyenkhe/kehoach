@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Đội giám sát</title>
+<title>KẾ HOẠCH KIỂM TRA THÁNG</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M36 4 12 36h15l-4 24 29-34H36z' fill='%23facc15'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,10 +16,10 @@
   }
   *{box-sizing:border-box}
   html{scroll-behavior:auto}
-  body{margin:0;padding:24px;min-height:100vh;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#3569fb 0%,#4f7dfb 55%,#6f93fb 100%);background-color:#4f7dfb;color:var(--text);font-size:14px;line-height:1.45}
+  body{margin:0;padding:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#3569fb 0%,#4f7dfb 55%,#6f93fb 100%);background-color:#4f7dfb;color:var(--text);font-size:14px;line-height:1.45}
 
   /* ===== Header ===== */
-  header{background:linear-gradient(135deg,#0f2a7a 0%,#1d4ed8 60%,#2f6bf0 100%);color:#fff;padding:22px 24px;max-width:1300px;margin:0 auto;border-radius:16px 16px 0 0;border-bottom:3px solid #facc15}
+  header{background:transparent;color:#fff;padding:22px 24px;max-width:none;margin:0;border:0;border-radius:0}
   .headwrap{max-width:1300px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
   .headwrap .unit{font-family:"Newsreader",Georgia,"Times New Roman",serif;margin:0 0 4px;font-size:24px;line-height:1.35;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#fff}
   header h1{margin:0;font-size:28px;font-weight:800;letter-spacing:.2px;color:var(--text)}
@@ -28,14 +28,16 @@
 
   #subtitle{background:#fff;padding:14px 24px;border-bottom:1px solid var(--line);border-radius:8px}
   #subtitle:empty{display:none}
+  #subtitle,#kqSubtitle{color:#dc2626;font-weight:800;font-family:"Times New Roman",Times,serif}
 
   /* ===== Control bar (sticky) ===== */
   .controlbar{position:static;background:#fff;width:100%;border-bottom:1px solid var(--line);border-radius:8px}
-  .controlbar-inner{max-width:1300px;margin:0 auto;padding:12px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  .controlbar-inner{max-width:none;margin:0;padding:12px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
   .field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
   .field.grow{flex:1;min-width:260px}
   input,select,button{font-family:Arial,Helvetica,sans-serif;font-size:inherit;font-weight:inherit;line-height:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
   input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+  input[readonly]{background:#f1f3f8;color:#6b7280;cursor:not-allowed}
   input[type="date"]{color-scheme:light}
   input[type="date"]::-webkit-calendar-picker-indicator{
     cursor:pointer;opacity:1;filter:none;width:16px;height:16px;padding:0;
@@ -48,7 +50,7 @@
   #status{font-size:12.5px;font-weight:400;text-transform:none;letter-spacing:normal;color:var(--muted)}
   #status.err{color:#dc2626;white-space:pre-line}
 
-  main{max-width:1300px;margin:0 auto;padding:18px 24px 40px;display:flex;flex-direction:column;gap:26px;background:#f5f6fa;border-radius:0 0 16px 16px}
+  main{max-width:none;width:100%;margin:0;padding:18px 24px 40px;display:flex;flex-direction:column;gap:26px;background:#f5f6fa;border-radius:0;min-height:calc(100vh - 90px)}
 
   /* ===== Section shell ===== */
   section.block{display:flex;flex-direction:column;gap:12px}
@@ -71,7 +73,7 @@
   .sbox.thang h3{color:var(--thang)} .sbox.ngay h3{color:var(--ngay)} .sbox.dem h3{color:var(--dem)}
   .sbox .cnt{font-size:inherit;font-weight:700;color:#dc2626}
   .team-line{margin:8px 0;line-height:1.6}
-  .team-line b{color:#7c3aed;font-size:inherit;font-weight:700;display:block;margin-bottom:3px}
+  .team-line b{color:#16a34a;font-size:inherit;font-weight:700;display:block;margin-bottom:3px}
   .team-line b .tba-cnt{color:#dc2626}
   .tag{display:inline-block;background:#eef3ff;color:#1f2937;border:1px solid #d6e0ff;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:12.5px;font-weight:700}
   .empty{color:var(--muted);font-style:italic;font-size:13px}
@@ -82,19 +84,23 @@
   .kqbox.c1{--c:#3a6ff7} .kqbox.c2{--c:#7c3aed} .kqbox.c3{--c:#16a34a} .kqbox.c4{--c:#f25a6b}
   .kqbox > h3{margin:0 0 10px;font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--c)}
   .kqbox > h3 .cnt{color:#dc2626}
+  .kqbox.c3{border-top-color:#166534}
+  .kqbox.c3 > h3{color:#166534}
   .kq-team{margin:12px 0 0}
-  .kq-team > b{display:block;color:#7c3aed;font-weight:700;margin-bottom:6px}
+  .kq-team > b{display:block;color:#16a34a;font-weight:700;margin-bottom:6px}
   .kq-team > b .tba-cnt{color:#dc2626}
   .kq-item{border:1px solid var(--line);border-left:3px solid var(--c,#3a6ff7);border-radius:8px;padding:8px 10px;margin:6px 0;background:#fafbff}
   .kq-item .kq-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px}
   .kq-item .kq-time{font-size:12.5px;color:#374151;font-weight:700}
+  .kq-item .kq-unit{font-size:12.5px;color:#374151}
+  .kq-item .kq-unit em{font-style:normal;font-weight:700}
   .kq-item .kq-content{white-space:pre-line;font-size:13px;line-height:1.5}
   .kq-item .kq-meta{margin-top:5px;font-size:12.5px;color:#4b5563}
   .kq-item .kq-meta span{display:inline-block;margin-right:12px}
   .kq-item .kq-meta em{font-style:normal;font-weight:700;color:#374151}
 
   @media(max-width:700px){
-    body{padding:10px}
+    body{padding:0}
     header{padding:16px}
     .controlbar-inner{padding:10px 16px}
     main{padding:14px 16px 30px}
@@ -115,7 +121,7 @@
   <div class="controlbar-inner">
     <div class="field grow">
       <span>Dữ liệu từ Link Google Sheet: <a class="openlink" id="openLink" href="#" target="_blank" rel="noopener" style="text-transform:none;letter-spacing:normal;margin-left:6px">Mở trong tab mới ↗</a></span>
-      <input type="url" id="urlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
+      <input type="url" id="urlInput" readonly tabindex="-1" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
     </div>
     <div class="field" style="max-width:170px">
       CHỌN NGÀY
@@ -138,7 +144,7 @@
       <div class="controlbar-inner">
         <div class="field grow">
           <span>Dữ liệu từ Link Google Sheet: <a class="openlink" id="kqOpenLink" href="#" target="_blank" rel="noopener" style="text-transform:none;letter-spacing:normal;margin-left:6px">Mở trong tab mới ↗</a></span>
-          <input type="url" id="kqUrlInput" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
+          <input type="url" id="kqUrlInput" readonly tabindex="-1" placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…">
         </div>
       </div>
     </div>
@@ -262,9 +268,8 @@ function jsonpLoad(url, fmt){
 }
 
 async function loadFromGoogle(){
-  const p = parseSheetUrl($("urlInput").value.trim());
+  const p = parseSheetUrl(DEFAULT_URL);
   if(!p){ setStatus("Link không hợp lệ. Hãy dán link Google Sheet dạng https://docs.google.com/spreadsheets/d/…", true); return; }
-  try{ localStorage.setItem("tba_filter_url", $("urlInput").value.trim()); }catch(e){}
 
   /* Link mở bảng gốc đúng tab theo gid */
   const editUrl = `https://docs.google.com/spreadsheets/d/${p.id}/edit${p.gid?("?gid="+p.gid):""}`;
@@ -340,12 +345,10 @@ function render(){
   }
 }
 
-let saved=""; try{ saved = localStorage.getItem("tba_filter_url") || ""; }catch(e){}
-$("urlInput").value = saved || DEFAULT_URL;
+$("urlInput").value = DEFAULT_URL;
 $("dateInput").value = toISO(new Date());
 $("dateInput").onchange = render;
 $("loadBtn").onclick = loadFromGoogle;
-$("urlInput").addEventListener("keydown", e => { if(e.key==="Enter") loadFromGoogle(); });
 
 loadFromGoogle();
 
@@ -465,16 +468,10 @@ function renderKQ(){
     const teams = Object.keys(byTeam).sort((a,b)=>a.localeCompare(b,"vi",{numeric:true}));
     const body = teams.length ? teams.map(tm=>{
       const list = byTeam[tm].map(it=>{
-        const time = [it.plan && it.plan.replace(/\s*\n\s*/g," "), it.start && ("Bắt đầu: "+it.start), it.end && ("Kết thúc: "+it.end)].filter(Boolean).join(" · ");
-        const meta = [
-          it.who  ? `<span><em>Người thực hiện:</em> ${esc(flat(it.who))}</span>`  : "",
-          it.unit ? `<span><em>Đơn vị:</em> ${esc(flat(it.unit))}</span>`          : "",
-          it.note ? `<span><em>Ghi chú:</em> ${esc(tidy(it.note).replace(/\n/g," "))}</span>` : ""
-        ].join("");
+        const time = it.plan ? it.plan.replace(/\s*\n\s*/g," ") : "";
         return `<div class="kq-item">
-          <div class="kq-top">${it.loc?`<span class="tag">${esc(it.loc.replace(/\s*\n\s*/g," "))}</span>`:""}${time?`<span class="kq-time">⏱ ${esc(time)}</span>`:""}</div>
+          <div class="kq-top">${it.loc?`<span class="tag">${esc(it.loc.replace(/\s*\n\s*/g," "))}</span>`:""}${time?`<span class="kq-time">⏱ ${esc(time)}</span>`:""}${it.unit?`<span class="kq-unit">👥 <em>Đơn vị công tác:</em> ${esc(flat(it.unit))}</span>`:""}</div>
           <div class="kq-content">${esc(tidy(it.content))}</div>
-          ${meta?`<div class="kq-meta">${meta}</div>`:""}
         </div>`;
       }).join("");
       return `<div class="kq-team"><b>${esc(tm)}: <span class="tba-cnt">${byTeam[tm].length} công tác</span></b>${list}</div>`;
@@ -487,10 +484,8 @@ function renderKQ(){
 }
 
 async function loadKQ(){
-  const url = $("kqUrlInput").value.trim();
-  const p = parseSheetUrl(url);
+  const p = parseSheetUrl(KQ_DEFAULT_URL);
   if(!p){ setKqStatus("Link không hợp lệ. Hãy dán link Google Sheet dạng https://docs.google.com/spreadsheets/d/…", true); return; }
-  try{ localStorage.setItem("kq_filter_url", url); }catch(e){}
   $("kqOpenLink").href = `https://docs.google.com/spreadsheets/d/${p.id}/edit${p.gid?("?gid="+p.gid):""}`;
   setKqStatus("Đang tải từ Google Sheet…");
   const g = p.gid ? `&gid=${p.gid}` : "";
@@ -518,10 +513,7 @@ async function loadKQ(){
   setKqStatus("Không đọc được Google Sheet. Chi tiết:\n"+errs.join("\n")+"\n\nHãy kiểm tra: (1) sheet đã chia sẻ \"Bất kỳ ai có đường liên kết – Người xem\"; (2) mở file HTML này bằng Chrome/Edge trực tiếp.", true);
 }
 
-let kqSaved=""; try{ kqSaved = localStorage.getItem("kq_filter_url") || ""; }catch(e){}
-$("kqUrlInput").value = kqSaved || KQ_DEFAULT_URL;
-$("kqUrlInput").addEventListener("change", loadKQ);
-$("kqUrlInput").addEventListener("keydown", e => { if(e.key==="Enter") loadKQ(); });
+$("kqUrlInput").value = KQ_DEFAULT_URL;
 renderKQ();
 loadKQ();
 </script>
