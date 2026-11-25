@@ -523,7 +523,7 @@ loadKQ();
 /* ===== Nút: Tự động cuộn ===== */
 (function(){
   /* Tự động cuộn kiểu marquee: chạy chậm, tới cuối thì nghỉ rồi quay về đầu và lặp lại liên tục cho đến khi bấm "Dừng cuộn" */
-  const SPEED = 22;        /* px mỗi giây — chỉnh số này để nhanh/chậm */
+  const SPEED = 10;        /* px mỗi giây — chỉnh số này để nhanh/chậm */
   const HOLD  = 3000;      /* ms dừng ở cuối / đầu trang trước khi lặp */
   const btnAs = $("btnAutoScroll"), asTxt = $("btnAutoScrollText");
   let running = false, raf = 0, last = 0, pos = 0, holdUntil = 0, phase = "scroll";
