@@ -428,6 +428,8 @@ function parseKQ(rows){
         const v = nonEmpty.slice(1);
         it = { date:v[0]||"", loc:v[1]||"", content:v[2]||"", who:"", unit:"", plan:"", start:"", end:"", note:v.slice(3).join(" ") };
       }
+      /* Chỉ lấy công tác có nội dung ở cột "Nội dung công tác" */
+      if(!String(it.content||"").trim()) continue;
       it.team = team || "(Chưa rõ đội)";
       out.groups[section+"_"+cat].push(it);
     }
