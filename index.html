@@ -418,8 +418,11 @@ function parseKQ(rows){
       cat = /cong tac trong ngay/.test(text) ? "ngay" : /cong tac dai ngay/.test(text) ? "dai" : "";
       continue;
     }
-    /* dòng công tác: ô đầu tiên có dạng 1.1, 2.10 ... */
-    if(/^\d+\.\d+$/.test(nonEmpty[0]) && section && cat){
+    /* dòng công tác: cứ có nội dung ở cột "Nội dung công tác" là tính 1 công tác (không cần STT dạng 1.1, 2.10 ...) */
+    const ndText = have ? get(r,col.nd) : "";
+    const hasContent = ndText !== "" && !/^noi dung/.test(norm(ndText));
+    const isStt = /^\d+\.\d+$/.test(nonEmpty[0]);
+    if((hasContent || (!have && isStt)) && section && cat){
       let it;
       if(have){
         it = { date:get(r,col.ngay), loc:get(r,col.dd), content:get(r,col.nd), who:get(r,col.nth), unit:get(r,col.dv),
